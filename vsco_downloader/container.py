@@ -3,10 +3,14 @@ import datetime
 import logging
 import os
 import re
+from abc import ABC
 from pprint import pprint
+from typing import Type, Union
 
 
-class VscoContent:
+class VscoContent(ABC):
+    verbose_content_type = None
+
     def __init__(self, content_dict):
         self._content_dict = content_dict
 
@@ -24,7 +28,6 @@ class VscoContent:
         if not capture_date:
             logging.getLogger('Content').warning(
                 'Datetime were not found in %s', str(self._content_dict))
-            raise ValueError
             return ''
         return datetime.datetime.fromtimestamp(
             capture_date / 1000).strftime("%Y-%m-%d_%H-%M-%S_")
@@ -36,15 +39,19 @@ class VscoContent:
         return os.path.join(*download_path, f'{self.datetime}{name}')
 
     @classmethod
-    def get_content_type(cls, content_dict) -> str:
+    def get_content_type(
+        cls, content_dict
+    ) -> Union[Type['VscoPhoto'], Type['VscoMiniVideo'], Type['VscoVideo'], ]:
         if 'videoUrl' in content_dict or 'video_url' in content_dict:
-            return 'mini_video'
+            return VscoMiniVideo
         if 'playback_url' in content_dict:
-            return 'video'
-        return 'photo'
+            return VscoVideo
+        return VscoPhoto
 
 
 class VscoPhoto(VscoContent):
+    verbose_content_type = 'photo'
+
     @property
     def download_url(self):
         try:
@@ -56,6 +63,8 @@ class VscoPhoto(VscoContent):
 
 
 class VscoMiniVideo(VscoContent):
+    verbose_content_type = 'mini-video'
+
     @property
     def download_url(self):
         return 'https://' + (self._content_dict.get('videoUrl')
@@ -63,6 +72,8 @@ class VscoMiniVideo(VscoContent):
 
 
 class VscoVideo(VscoContent):
+    verbose_content_type = 'video'
+
     def __init__(self, content_dict):
         self._temp_dir = None
         super().__init__(content_dict)
@@ -104,7 +115,7 @@ class VscoVideo(VscoContent):
         proc = await asyncio.create_subprocess_shell(
             ffmpeg_cmd,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
+            stderr=asyncio.subprocess.PIPE,)
         stdout, stderr = await proc.communicate()
         return stderr.decode() if stderr else None
 
