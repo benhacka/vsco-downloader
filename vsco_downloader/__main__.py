@@ -4,20 +4,12 @@ import logging
 import time
 from typing import List
 
-import aiohttp
-
 from vsco_downloader.user import VscoUser
 from .downloader import VscoGrabber
 
 
 def parse_arg():
     pass
-
-
-def prepare_links(link: str):
-    if link.startswith('https://vsco.co/'):
-        return link.split('https://vsco.co/')[-1].split('/')[0]
-    return link
 
 
 def main():
