@@ -1,11 +1,10 @@
 import asyncio
-import datetime
 import logging
 import os
 import re
 import json
 import tempfile
-import time
+from typing import List
 
 import aiohttp
 import aiofiles
@@ -26,24 +25,22 @@ DEFAULT_HEADERS = {
 
 class VscoGrabber:
     def __init__(self,
-                 content_limit=DEFAULT_LIMIT,
-                 max_thread=25,
+                 content_limit=50,
                  max_ffmpeg_concat=5,
                  content_dir='download'):
         self._content_dir = content_dir
         self._content_limit = content_limit
-
         self._logger = logging.getLogger('VSCO-GRABBER')
-        self._loop = asyncio.get_event_loop()
-        self._semaphore = asyncio.Semaphore(max_thread)
-        self._max_ffmpeg_concat = asyncio.Semaphore(max_ffmpeg_concat)
+        self._max_get_req = content_limit
+        self._semaphore = None
+        self._max_ffmpeg_concat_count = max_ffmpeg_concat
+        self._max_ffmpeg_concat = None
 
     def _parse_first_page_content(self, html):
         result = re.search(
             r'<script>window.__PRELOADED_STATE__ = (.*)</script>', html)
         if not result:
-            self._logger.warning('Oppps something going wrong... '
-                                 'Was HTML structure changed?')
+            self._logger.warning('Initial JSON block were not found')
             return {}
         return json.loads(result.group(1))
 
@@ -59,9 +56,11 @@ class VscoGrabber:
             return content
 
     @staticmethod
-    async def _get_html_text(user: VscoUser, url):
+    async def _get_html_text(user: VscoUser, url, return_also_url=False):
         async with user.scrap_session.get(url) as request:
             content = await request.text()
+            if return_also_url:
+                return content, request.url
             return content
 
     @staticmethod
@@ -122,35 +121,39 @@ class VscoGrabber:
             counter += 1
 
     async def _parse_user_page(self, initial_json, user: VscoUser):
-        user_id = self._get_user_id(initial_json, str(user))
-        if not user_id:
-            self._logger.error("Can't parse site_id for %s", user)
-            return
-        user.set_user_id(user_id)
-        token = self._get_token(initial_json)
-        if not token:
-            self._logger.error("Can't parse Bearer token for %s", user)
-            return
-        user.set_token(token)
         try:
-            cursor = self._get_next_cursor(initial_json, user_id)
-        except KeyError as e:
-            self._logger.error(e)
-            return
-        for media_dict in self._get_entries_dict(initial_json).values():
-            user.add_content(media_dict)
-        if not cursor and not user.all_content:
-            self._logger.info('User %s has no content', user)
-            return
-        user.set_cursor(cursor)
-        await self._parser_user_entries(user)
+            user_id = self._get_user_id(initial_json, str(user))
+            if not user_id:
+                self._logger.error("Can't parse site_id for %s", user)
+                return
+            user.set_user_id(user_id)
+            token = self._get_token(initial_json)
+            if not token:
+                self._logger.error("Can't parse Bearer token for %s", user)
+                return
+            user.set_token(token)
+            try:
+                cursor = self._get_next_cursor(initial_json, user_id)
+            except KeyError:
+                self._logger.error('Getting cursor error for %s')
+                return
+            for media_dict in self._get_entries_dict(initial_json).values():
+                user.add_content(media_dict)
+            if not cursor and not user.all_content:
+                self._logger.info('User %s has no content', user)
+                return
+            user.set_cursor(cursor)
+        finally:
+            if user.cursor is None and not user.all_content:
+                user.set_invalid()
+            user.set_initialized()
 
     async def _download_file(self, url, file_name, session):
         if not url:
-            self._logger.warning('None url - skipped')
-            return True
+            self._logger.warning('None url for %s', file_name)
+            return False
         if os.path.isfile(file_name):
-            return
+            return None
 
         os.makedirs(os.path.dirname(file_name), exist_ok=True)
         try:
@@ -171,7 +174,7 @@ class VscoGrabber:
     async def _download_large_file(self, file: VscoVideo, user: VscoUser):
         out_file_name = file.get_file_name(self._content_dir, str(user))
         if os.path.isfile(out_file_name):
-            return
+            return None
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             file.set_temp_dir(tmp_dir_name)
             try:
@@ -186,7 +189,7 @@ class VscoGrabber:
                 self._logger.error(
                     'Cant parser best resolution url for a file %s. '
                     'Skipping...', out_file_name)
-                return None
+                return False
             parted_urls_text = await self._get_html_text(user, parted_url)
             parted_urls = re.findall(r'http[s]?://.*', parted_urls_text)
             content_temp_dir = file.temp_content_dir
@@ -199,7 +202,6 @@ class VscoGrabber:
                                               user.download_session)):
                     temp_files.append(file_name)
                 else:
-                    # TODO: need to re-download w/o exit
                     self._logger.error('Error on downloading %s from %s', )
                     return False
             ffmpeg_cmd = file.generate_ffmpeg_concat(temp_files, out_file_name)
@@ -208,12 +210,12 @@ class VscoGrabber:
             if error:
                 self._logger.error('Error on concat %s: %s', out_file_name,
                                    error)
-            else:
-                self._logger.info('Video %s was downloaded', out_file_name)
-            return error
+                return False
+            self._logger.info('Video %s was downloaded', out_file_name)
+            return True
 
-    async def _download_user_content(self, user: VscoUser, content=None):
-        all_content = content or user.all_content
+    async def _download_user_content(self, user: VscoUser):
+        all_content = user.all_content
         total_count = len(all_content)
         self._logger.info('Start downloading files for %s', user)
         async with aiohttp.ClientSession(
@@ -226,38 +228,110 @@ class VscoGrabber:
                     else:
                         downloaded = await self._download_small_file(
                             file, user)
-                if downloaded or downloaded is None:
-                    all_content.remove(file)
+                if downloaded:
+                    user.stat.add_downloaded(file)
+                elif downloaded is None:
+                    user.stat.add_skipped(file)
+
                 if not index % 10:
-                    self._logger.info('%s: (%d/%d)', user, index, total_count)
-        if not all_content:
-            self._logger.info('All content (%d) downloaded for user %s',
-                              total_count, user)
-            return
-        self._logger.warning('%d files were not downloaded. Retying...',
-                             len(all_content))
-        return await self._download_user_content(user, all_content)
+                    self._logger.info('%s: (%d / %d)', user, index,
+                                      total_count)
 
     async def _parser_first_page(self, user):
-        self._logger.info('Getting first page for %s', user)
-        content = await self._get_html_text(user, user.user_url)
+        try:
+            is_short_init = user.is_inited_with_short
+            logger_add = ('and username from' if is_short_init else 'for')
+            self._logger.info('Getting first page %s %s', logger_add, user)
+            if is_short_init:
+                url = user.inited_arg
+                content, full_url = await self._get_html_text(user, url, True)
+                user_name, is_full_url = user.get_username_from_full_url(
+                    str(full_url))
+                user.set_username(user_name)
+                self._logger.info('Mapped username %s for url %s', user_name,
+                                  url)
+                if not is_full_url:
+                    self._logger.info(
+                        'Url %s is content link. First init skipped', url)
+                    user.clear_init_with_short()
+                    return
+            else:
+                content = await self._get_html_text(user, user.user_url)
+
+        except aiohttp.ClientError as e:
+            user.set_invalid()
+            self._logger.error('Error on parse page %s', e)
+            return
         self._logger.info('Parsing initial page content for %s', user)
         initial_json = self._parse_first_page_content(content)
         if not initial_json:
+            user.set_invalid()
             return
         await self._parse_user_page(initial_json, user)
-        return user
 
-    async def parse_users(self, usernames):
-        st_time = time.time()
-        await asyncio.gather(
-            *[self.parse_user(username) for username in usernames])
-        delta = datetime.timedelta(seconds=time.time() - st_time)
-        self._logger.info('Script finished in %s', delta)
+    async def _restore_short_links(self, usernames_and_urls: List[str],
+                                   session) -> List[VscoUser]:
+        usernames = set()
+        short_urls = set()
+        for url_username in usernames_and_urls:
+            if 'vsco.co/' in url_username:
+                try:
+                    user_name, _ = VscoUser.get_username_from_full_url(
+                        url_username)
+                except ValueError as e:
+                    self._logger.info(e)
+                    continue
+                usernames.add(user_name)
+            elif 'vs.co/' in url_username:
+                short_urls.add(url_username)
+            else:
+                if not VscoUser.is_valid_username(url_username):
+                    self._logger.warning(
+                        '%s is not vsco url and incorrect username. Skipped!',
+                        url_username)
+                    continue
+                usernames.add(url_username)
+        if not short_urls:
+            self._logger.info('There are no short links')
+            return [VscoUser(username, session) for username in usernames]
+        self._logger.info(f'Inited %d users with short url', len(short_urls))
+        pre_inited_users = [
+            VscoUser(short_url, session, True) for short_url in short_urls
+        ]
+        inited_users: List[VscoUser] = await asyncio.gather(
+            *[self.parse_user(user, True) for user in pre_inited_users])
+        for user in inited_users:
+            repeat = str(user) in usernames
+            if repeat:
+                usernames.remove(str(user))
+                self._logger.info(
+                    'Removed %s from usernames. '
+                    'This username grabbed with short', user)
+        return inited_users + [
+            VscoUser(user_name, session) for user_name in usernames
+        ]
 
-    async def parse_user(self, username):
-        vsco_user = VscoUser(username)
+    async def parse_users(self, username_and_urls: List[str]):
+        self._semaphore = asyncio.Semaphore(self._max_get_req)
+        self._max_ffmpeg_concat = asyncio.Semaphore(
+            self._max_ffmpeg_concat_count)
         async with aiohttp.ClientSession(
-                headers=DEFAULT_HEADERS) as vsco_user.scrap_session:
-            user = await self._parser_first_page(vsco_user)
-            await self._download_user_content(user)
+                headers=DEFAULT_HEADERS) as scrap_session:
+            users = await self._restore_short_links(username_and_urls,
+                                                    scrap_session)
+            try:
+                users = await asyncio.gather(
+                    *[self.parse_user(user) for user in users])
+            except (KeyboardInterrupt, asyncio.CancelledError):
+                self._logger.info('Stopping...')
+        return users
+
+    async def parse_user(self, vsco_user: VscoUser, only_init=False):
+        if vsco_user.is_invalid:
+            return vsco_user
+        if not vsco_user.is_inited:
+            await self._parser_first_page(vsco_user)
+        if not only_init and not vsco_user.is_invalid:
+            await self._parser_user_entries(vsco_user)
+            await self._download_user_content(vsco_user)
+        return vsco_user
