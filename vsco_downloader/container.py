@@ -103,10 +103,11 @@ class VscoVideo(VscoContent):
             res_dict[int(ext_string.group(1))] = splitted_lines[index + 1]
         return res_dict[max(res_dict)]
 
-    def generate_ffmpeg_concat(self, ffmpeg, files, out_file):
+    def generate_ffmpeg_concat(self, ffmpeg, files, out_file, container):
+        audio = '' if container == 'ts' else '-bsf:a aac_adtstoasc'
         concat_string = self._generate_concat_string(files)
         ffmpeg_cmd = (f'{ffmpeg} -hide_banner -loglevel error -y -i '
-                      f'"{concat_string}" -c copy -bsf:a aac_adtstoasc '
+                      f'"{concat_string}" -c copy {audio} '
                       f'{out_file}')
         return ffmpeg_cmd
 
