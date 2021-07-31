@@ -216,7 +216,7 @@ class VscoUser:
             full_url += '/'
         full_url = full_url.replace('vsco.co:443', 'vsco.co')
         username, *trail = full_url.split('vsco.co/')[-1].split('/')
-        if len(trail) > 1:
+        if len(trail) > 0:
             trail = trail[0]
             is_full = False
         if not username or (trail and trail not in cls.allowed_vsco_path):
