@@ -50,7 +50,7 @@ foo
 
 https://vsco.co/baz/gallery
 ```
-`vsco-downloader bar -u accs_to_dl -s -d ~/Download`
+`vsco-downloader bar -u accs_to_dl -s -d /home/username/Download/`
 
 For more info see Usage help
 
