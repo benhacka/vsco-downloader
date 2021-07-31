@@ -157,8 +157,14 @@ async def parse_arg():
                         default='mp4',
                         help='A container for stream (m3u8) videos. '
                         'Default "mp4", a possible alternative is "ts".')
-    # TODO: add link parser
-    # parser.add_argument('-p', '--parse-links')
+
+    parser.add_argument('-p',
+                        '--save-parsed-download-urls',
+                        action='store_true',
+                        default=False,
+                        help='Store urls in the file into user dir. '
+                        'Filename has saving datetime so '
+                        'this will not overwrite old links.')
 
     args = parser.parse_args()
     download_path = args.download_path
@@ -191,11 +197,12 @@ async def parse_arg():
         'max_ffmpeg_threads': args.max_fmpeg_threads,
         'ffmpeg_bin': ffmpeg_bin,
         'disabled_content': set(disabled_content),
-        'video_container': args.container_for_m3u8
+        'video_container': args.container_for_m3u8,
+        'save_urls_to_file': args.save_parsed_download_urls
     }
     parse_dict = {
         'username_and_urls': users,
         'download_path': download_path,
-        'black_list': black_list_users
+        'black_list': black_list_users,
     }
     return init_dict, parse_dict
