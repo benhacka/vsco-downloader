@@ -4,13 +4,13 @@ import os
 import re
 import json
 import tempfile
-from typing import List
+from typing import List, Set
 
 import aiohttp
 import aiofiles
 
 from .container import VscoVideo
-from .user import DEFAULT_LIMIT, VscoUser
+from .user import VscoUser
 
 DEFAULT_HEADERS = {
     'user-agent':
@@ -25,16 +25,18 @@ DEFAULT_HEADERS = {
 
 class VscoGrabber:
     def __init__(self,
-                 content_limit=50,
-                 max_ffmpeg_concat=5,
-                 content_dir='download'):
-        self._content_dir = content_dir
-        self._content_limit = content_limit
+                 download_limit: int = 100,
+                 max_ffmpeg_threads: int = 10,
+                 ffmpeg_bin: str = 'ffmpeg',
+                 disabled_content: Set[str] = None,
+                 video_container='mp4'):
+        self._semaphore = asyncio.Semaphore(download_limit)
+        self._max_ffmpeg_concat = asyncio.Semaphore(max_ffmpeg_threads)
+        self._ffmpeg_bin = ffmpeg_bin
+        self._disabled_content = disabled_content or {}
+        self._video_container = video_container
+        self._content_dir = '.'
         self._logger = logging.getLogger('VSCO-GRABBER')
-        self._max_get_req = content_limit
-        self._semaphore = None
-        self._max_ffmpeg_concat_count = max_ffmpeg_concat
-        self._max_ffmpeg_concat = None
 
     def _parse_first_page_content(self, html):
         result = re.search(
@@ -115,7 +117,8 @@ class VscoGrabber:
             user.set_cursor(content.get('next_cursor'))
             media = content.get('media', [])
             for image_dict in media:
-                user.add_content(image_dict[image_dict['type']])
+                user.add_content(image_dict[image_dict['type']],
+                                 self._disabled_content)
             self._logger.info('Page %d parsed for %s. Total content: %d',
                               counter, user, len(user.all_content))
             counter += 1
@@ -138,7 +141,7 @@ class VscoGrabber:
                 self._logger.error('Getting cursor error for %s')
                 return
             for media_dict in self._get_entries_dict(initial_json).values():
-                user.add_content(media_dict)
+                user.add_content(media_dict, self._disabled_content)
             if not cursor and not user.all_content:
                 self._logger.info('User %s has no content', user)
                 return
@@ -172,7 +175,9 @@ class VscoGrabber:
             user.download_session)
 
     async def _download_large_file(self, file: VscoVideo, user: VscoUser):
-        out_file_name = file.get_file_name(self._content_dir, str(user))
+        out_file_name = file.get_file_name(self._content_dir,
+                                           str(user),
+                                           container=self._video_container)
         if os.path.isfile(out_file_name):
             return None
         with tempfile.TemporaryDirectory() as tmp_dir_name:
@@ -204,7 +209,8 @@ class VscoGrabber:
                 else:
                     self._logger.error('Error on downloading %s from %s', )
                     return False
-            ffmpeg_cmd = file.generate_ffmpeg_concat(temp_files, out_file_name)
+            ffmpeg_cmd = file.generate_ffmpeg_concat(self._ffmpeg_bin,
+                                                     temp_files, out_file_name)
             async with self._max_ffmpeg_concat:
                 error = await file.run_ffmpeg(ffmpeg_cmd)
             if error:
@@ -269,8 +275,7 @@ class VscoGrabber:
             return
         await self._parse_user_page(initial_json, user)
 
-    async def _restore_short_links(self, usernames_and_urls: List[str],
-                                   session) -> List[VscoUser]:
+    def _get_splitted_user_sets(self, usernames_and_urls):
         usernames = set()
         short_urls = set()
         for url_username in usernames_and_urls:
@@ -291,8 +296,24 @@ class VscoGrabber:
                         url_username)
                     continue
                 usernames.add(url_username)
+        return usernames, short_urls
+
+    async def _restore_users(self, usernames_and_urls: Set[str], session,
+                             black_list: Set[str]) -> List[VscoUser]:
+        usernames, short_urls = self._get_splitted_user_sets(
+            usernames_and_urls)
+        bl_usernames, bl_short_urls = self._get_splitted_user_sets(black_list)
+        if bl_short_urls:
+            self._logger.warning('Black list contains short links. '
+                                 'They will be ignored!')
+        source_len = len(usernames)
+        usernames -= bl_usernames
+        if len(usernames) != source_len:
+            self._logger.info(
+                '%d blacklisted users have '
+                'been removed from targets', source_len - len(usernames))
         if not short_urls:
-            self._logger.info('There are no short links')
+            self._logger.debug('There are no short links')
             return [VscoUser(username, session) for username in usernames]
         self._logger.info(f'Inited %d users with short url', len(short_urls))
         pre_inited_users = [
@@ -311,14 +332,19 @@ class VscoGrabber:
             VscoUser(user_name, session) for user_name in usernames
         ]
 
-    async def parse_users(self, username_and_urls: List[str]):
-        self._semaphore = asyncio.Semaphore(self._max_get_req)
-        self._max_ffmpeg_concat = asyncio.Semaphore(
-            self._max_ffmpeg_concat_count)
+    async def parse_users(self,
+                          username_and_urls: Set[str],
+                          download_path='.',
+                          black_list=None):
         async with aiohttp.ClientSession(
                 headers=DEFAULT_HEADERS) as scrap_session:
-            users = await self._restore_short_links(username_and_urls,
-                                                    scrap_session)
+            self._content_dir = download_path
+            users = await self._restore_users(username_and_urls, scrap_session,
+                                              (black_list or {}))
+            if not users:
+                self._logger.warning(
+                    'There are no users for download. Stopping...')
+                return []
             try:
                 users = await asyncio.gather(
                     *[self.parse_user(user) for user in users])
