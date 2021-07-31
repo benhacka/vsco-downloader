@@ -4,6 +4,7 @@ import os
 import re
 import json
 import tempfile
+from datetime import datetime
 from typing import List, Set
 
 import aiohttp
@@ -25,16 +26,19 @@ DEFAULT_HEADERS = {
 
 class VscoGrabber:
     def __init__(self,
+                 *,
                  download_limit: int = 100,
                  max_ffmpeg_threads: int = 10,
                  ffmpeg_bin: str = 'ffmpeg',
                  disabled_content: Set[str] = None,
-                 video_container='mp4'):
+                 video_container='mp4',
+                 save_urls_to_file=False):
         self._semaphore = asyncio.Semaphore(download_limit)
         self._max_ffmpeg_concat = asyncio.Semaphore(max_ffmpeg_threads)
         self._ffmpeg_bin = ffmpeg_bin
         self._disabled_content = disabled_content or {}
         self._video_container = video_container
+        self._save_urls_to_file = save_urls_to_file
         self._content_dir = '.'
         self._logger = logging.getLogger('VSCO-GRABBER')
 
@@ -210,7 +214,8 @@ class VscoGrabber:
                     self._logger.error('Error on downloading %s from %s', )
                     return False
             ffmpeg_cmd = file.generate_ffmpeg_concat(self._ffmpeg_bin,
-                                                     temp_files, out_file_name)
+                                                     temp_files, out_file_name,
+                                                     self._video_container)
             async with self._max_ffmpeg_concat:
                 error = await file.run_ffmpeg(ffmpeg_cmd)
             if error:
@@ -223,6 +228,17 @@ class VscoGrabber:
     async def _download_user_content(self, user: VscoUser):
         all_content = user.all_content
         total_count = len(all_content)
+        if not total_count:
+            self._logger.info('User %s has no content', user)
+            return
+        if self._save_urls_to_file:
+            user_dir = os.path.join(self._content_dir, str(user))
+            os.makedirs(user_dir, exist_ok=True)
+            log_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_urls.txt")
+            log_name = os.path.join(user_dir, log_name)
+            async with aiofiles.open(log_name, 'w') as log_file:
+                await log_file.write('\n'.join(
+                    [str(file.download_url) for file in all_content]))
         self._logger.info('Start downloading files for %s', user)
         async with aiohttp.ClientSession(
                 headers=DEFAULT_HEADERS) as user.download_session:
