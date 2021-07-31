@@ -121,8 +121,7 @@ class VscoGrabber:
             user.set_cursor(content.get('next_cursor'))
             media = content.get('media', [])
             for image_dict in media:
-                user.add_content(image_dict[image_dict['type']],
-                                 self._disabled_content)
+                user.add_content(image_dict[image_dict['type']])
             self._logger.info('Page %d parsed for %s. Total content: %d',
                               counter, user, len(user.all_content))
             counter += 1
@@ -142,10 +141,10 @@ class VscoGrabber:
             try:
                 cursor = self._get_next_cursor(initial_json, user_id)
             except KeyError:
-                self._logger.error('Getting cursor error for %s')
+                self._logger.error('Getting cursor error for %s', user)
                 return
             for media_dict in self._get_entries_dict(initial_json).values():
-                user.add_content(media_dict, self._disabled_content)
+                user.add_content(media_dict)
             if not cursor and not user.all_content:
                 self._logger.info('User %s has no content', user)
                 return
@@ -243,6 +242,9 @@ class VscoGrabber:
         async with aiohttp.ClientSession(
                 headers=DEFAULT_HEADERS) as user.download_session:
             for index, file in enumerate(all_content.copy(), 1):
+                if file.verbose_content_type in self._disabled_content:
+                    user.stat.add_skipped(file)
+                    continue
                 async with self._semaphore:
                     if isinstance(file, VscoVideo):
                         downloaded = await self._download_large_file(
@@ -295,6 +297,8 @@ class VscoGrabber:
         usernames = set()
         short_urls = set()
         for url_username in usernames_and_urls:
+            if not url_username.strip():
+                continue
             if 'vsco.co/' in url_username:
                 try:
                     user_name, _ = VscoUser.get_username_from_full_url(
