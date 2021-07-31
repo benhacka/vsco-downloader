@@ -154,8 +154,11 @@ class VscoUser:
     def set_username(self, user_name):
         self._user_name = user_name
 
-    def add_content(self, content_dict):
+    def add_content(self, content_dict, ignored_content=None):
+        ignored_content = ignored_content or {}
         content_class = VscoContent.get_content_type(content_dict)
+        if content_class.verbose_content_type in ignored_content:
+            return
         content_set = {
             VscoPhoto: self._photo_content,
             VscoMiniVideo: self._mini_video_content,
