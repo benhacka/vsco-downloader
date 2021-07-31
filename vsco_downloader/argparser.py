@@ -171,7 +171,6 @@ async def parse_arg():
     if not download_path:
         download_path = os.environ.get(args.download_path_variable)
     download_path = download_path or '.'
-    print(download_path)
     users = args.users + get_users_from_file(args.users_file_list)
     if not users:
         raise ValueError('There are no target users')
@@ -191,7 +190,10 @@ async def parse_arg():
             "Video content (m3u8) disabled!", ffmpeg_bin)
         disabled_content.append(VscoVideo.verbose_content_type)
     if len(disabled_content) == len(REGISTERED_CONTENT):
-        raise ValueError('All content has been disabled')
+        msg = 'All content has been disabled'
+        if not args.save_parsed_download_urls:
+            raise ValueError(msg)
+        logging.info("Only urls'll be save.")
     init_dict = {
         'download_limit': args.download_limit,
         'max_ffmpeg_threads': args.max_fmpeg_threads,
