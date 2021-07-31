@@ -17,7 +17,7 @@ setuptools.setup(
     include_package_data=True,
     packages=setuptools.find_packages(),
     install_requires=required,
-    python_requires='>=3.8',
+    python_requires='>=3.7',
     entry_points={
         'console_scripts': [
             'vsco-downloader=vsco_downloader.__main__:main',
