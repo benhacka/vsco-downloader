@@ -6,7 +6,7 @@ from typing import List
 
 from vsco_downloader.argparser import parse_arg
 from vsco_downloader.user import VscoUser
-from .downloader import VscoGrabber
+from vsco_downloader.downloader import VscoGrabber
 
 
 async def a_main():

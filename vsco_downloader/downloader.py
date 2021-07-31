@@ -10,8 +10,8 @@ from typing import List, Set
 import aiohttp
 import aiofiles
 
-from .container import VscoVideo
-from .user import VscoUser
+from vsco_downloader.container import VscoVideo
+from vsco_downloader.user import VscoUser
 
 DEFAULT_HEADERS = {
     'user-agent':
