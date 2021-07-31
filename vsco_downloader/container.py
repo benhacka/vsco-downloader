@@ -85,11 +85,11 @@ class VscoVideo(VscoContent):
     def download_url(self):
         return self._content_dict['playback_url']
 
-    def get_file_name(self, *download_path):
+    def get_file_name(self, *download_path, container='mp4'):
         if not self.download_url:
             return None
         # TODO: make container as param
-        name = self._content_dict['_id'] + '.mp4'
+        name = self._content_dict['_id'] + f'f.{container}'
         return os.path.join(*download_path, f'{self.datetime}{name}')
 
     @classmethod
@@ -103,9 +103,9 @@ class VscoVideo(VscoContent):
             res_dict[int(ext_string.group(1))] = splitted_lines[index + 1]
         return res_dict[max(res_dict)]
 
-    def generate_ffmpeg_concat(self, files, out_file):
+    def generate_ffmpeg_concat(self, ffmpeg, files, out_file):
         concat_string = self._generate_concat_string(files)
-        ffmpeg_cmd = (f'ffmpeg -hide_banner -loglevel error -y -i '
+        ffmpeg_cmd = (f'{ffmpeg} -hide_banner -loglevel error -y -i '
                       f'"{concat_string}" -c copy -bsf:a aac_adtstoasc '
                       f'{out_file}')
         return ffmpeg_cmd
@@ -115,14 +115,14 @@ class VscoVideo(VscoContent):
         proc = await asyncio.create_subprocess_shell(
             ffmpeg_cmd,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,)
+            stderr=asyncio.subprocess.PIPE,
+        )
         stdout, stderr = await proc.communicate()
         return stderr.decode() if stderr else None
 
     @classmethod
-    async def is_ffmpeg_exists(cls):
-        # TODO: make ffmpeg bin alias as param
-        return not cls.run_ffmpeg('ffmpeg -version')
+    async def is_ffmpeg_exists(cls, ffmpeg_bin):
+        return not await cls.run_ffmpeg(f'{ffmpeg_bin} -version')
 
     def _generate_concat_string(self, files):
         return 'concat:' + '|'.join(
@@ -133,3 +133,6 @@ class VscoVideo(VscoContent):
         assert self._temp_dir
         return os.path.join(self._temp_dir,
                             self.download_url.split('/')[-1].split('.')[0])
+
+
+REGISTERED_CONTENT = [VscoPhoto, VscoMiniVideo, VscoVideo]
