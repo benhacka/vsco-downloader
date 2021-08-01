@@ -1,16 +1,26 @@
-# VSCO Downloader
+# VSCO Downloader 
+[![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)]()
+[![Release](https://img.shields.io/github/v/release/benhacka/vsco-downloader)]()
+[![GitHub last commit](https://img.shields.io/github/last-commit/benhacka/vsco-downloader)]()
+[![Issues](https://img.shields.io/github/issues-raw/benhacka/vsco-downloader)]()
+[![MIT License](https://img.shields.io/github/license/benhacka/vsco-downloader)](https://github.com/benhacka/vsco-downloader/blob/master/LICENSE)
+
+
 ###### This is a simple console async downloader from [vsco.co](vsco.co).
 So there is no fcking CLI/GUI here as befits normal scripts.  
 It works through a call from the terminal 
 (*Sry, win-users, I know that really can be bad for yours...*)  
-Btw sup _2ch_ & _VSCO находок группа_
+Btw sup _2ch⚡_ & _VSCO находок группа_
+
+### Change Log
+[CHANGELOG.md](https://github.com/benhacka/vsco-downloader/CHANGELOG.md)
 
 ### Requirements
 All python requirements in the requirements.txt:
-- aiohttp
-- aiofiles  
+- `aiohttp`
+- `aiofiles`  
 
-To download videos in _m3u8_ format (large parted videos), you need compiled `ffmpeg`, see description for a `--ffmpeg-bin` argument
+To download videos in _m3u8_ format (parted videos with large size), you need compiled `ffmpeg`, see description for a `--ffmpeg-bin` argument
 
 
 ### Installation
@@ -19,16 +29,27 @@ To download videos in _m3u8_ format (large parted videos), you need compiled `ff
 git clone https://github.com/benhacka/vsco-downloader
 cd vsco-downloader
 ```
-##### [var 1]. Usage w/o install dist pkg
+- For Windows users: change `python3` with `python` in all console command 
+##### [var 1]. Usage w/o install dist pkg (_I do not recommend this method_)
 ```
 python3 -m pip install -r requirements.txt
-python3 -m vsco_downloader
 ```
-##### [var 2]. Install package with setup.py
+- 1.1 Run main from package:  
+`python3 -m vsco_downloader`
+
+- 1.2 Run a script:  
+`python3 vsco_downloader.py`
+
+##### or [var 2]. Install package with setup.py
 ```
 python3 setup.py install --user
 ```
-##### [var 3]. Install package with pip
+- For Linux users: you can run w/o `--user` but with `sudo` for installing in `/usr/lib/python3.*/site-packages/`. 
+With `--user` it will install in the `~/.local/bin/` 
+_(depends on the distribution... i use arch btw [it's a stupid lie i use the best of arch - manjaro])_
+
+- For Windows users: `--user` is not required (I think so..?)
+##### or [var 3]. Install package with pip from github 
 ```
 python3 -m pip install git+https://github.com/benhacka/vsco-downloader.git
 ```
