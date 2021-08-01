@@ -5,6 +5,14 @@ It works through a call from the terminal
 (*Sry, win-users, I know that really can be bad for yours...*)  
 Btw sup _2ch_ & _VSCO находок группа_
 
+### Requirements
+All python requirements in the requirements.txt:
+- aiohttp
+- aiofiles  
+
+To download videos in _m3u8_ format (large parted videos), you need compiled `ffmpeg`, see description for a `--ffmpeg-bin` argument
+
+
 ### Installation
 ##### Common step
 ```
