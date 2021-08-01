@@ -83,7 +83,7 @@ https://vsco.co/baz/gallery
 For more info see Usage help
 
 ### Usage help (*help menu*)
-```sh
+```plaintext
 VSCO downloader
 
 positional arguments:
