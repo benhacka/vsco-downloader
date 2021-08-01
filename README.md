@@ -14,7 +14,7 @@ Btw sup _2ch⚡_ & _VSCO находок группа_
 
 [CHANGELOG.md](https://github.com/benhacka/vsco-downloader/blob/master/CHANGELOG.md)
 
-### Requirements
+## Requirements
 All python requirements in the requirements.txt:
 - `aiohttp`
 - `aiofiles`  
@@ -22,14 +22,14 @@ All python requirements in the requirements.txt:
 To download videos in _m3u8_ format (parted videos with large size), you need compiled `ffmpeg`, see description for a `--ffmpeg-bin` argument
 
 
-### Installation
-##### Common step
+## Installation
+#### Common step
 ```
 git clone https://github.com/benhacka/vsco-downloader
 cd vsco-downloader
 ```
 - For Windows users: change `python3` with `python` in all console command 
-##### [var 1]. Usage w/o install dist pkg (_I do not recommend this method_)
+#### [var 1]. Usage w/o install dist pkg (_I do not recommend this method_)
 ```
 python3 -m pip install -r requirements.txt
 ```
@@ -39,7 +39,7 @@ python3 -m pip install -r requirements.txt
 - 1.2 Run a script:  
 `python3 vsco_downloader.py`
 
-##### or [var 2]. Install package with setup.py
+#### or [var 2]. Install package with setup.py
 ```
 python3 setup.py install --user
 ```
@@ -48,12 +48,12 @@ With `--user` it will install in the `~/.local/bin/`
 _(depends on the distribution... i use arch btw [it's a stupid lie i use the best of arch - manjaro])_
 
 - For Windows users: `--user` is not required (I think so..?)
-##### or [var 3]. Install package with pip from github 
+#### or [var 3]. Install package with pip from github 
 ```
 python3 -m pip install git+https://github.com/benhacka/vsco-downloader.git
 ```
 
-### Use cases
+## Use cases
 All use cases wrote for installed package and calling with `vsco-downloader`  
 I highly recommend you to set `vsco_download_path` environment variable (see _Usage help_). 
 
