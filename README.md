@@ -12,8 +12,7 @@ It works through a call from the terminal
 (*Sry, win-users, I know that really can be bad for yours...*)  
 Btw sup _2ch⚡_ & _VSCO находок группа_
 
-### Change Log
-[CHANGELOG.md](https://github.com/benhacka/vsco-downloader/CHANGELOG.md)
+[CHANGELOG.md](https://github.com/benhacka/vsco-downloader/blob/master/CHANGELOG.md)
 
 ### Requirements
 All python requirements in the requirements.txt:
