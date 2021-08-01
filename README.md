@@ -82,7 +82,7 @@ https://vsco.co/baz/gallery
 
 For more info see Usage help
 
-### Usage help (*help menu*)
+## Usage help (*help menu*)
 ```plaintext
 VSCO downloader
 
