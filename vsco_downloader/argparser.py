@@ -6,7 +6,7 @@ from vsco_downloader.container import REGISTERED_CONTENT, VscoVideo
 
 content_types = [
     content.verbose_content_type for content in REGISTERED_CONTENT
-]
+] + ['all']
 
 MAX_THREAD = 500
 MAX_FFMPEG_THREAD = 100
@@ -184,6 +184,9 @@ async def parse_arg():
         logging.info('Black list user count: %d', len(black_list_users))
     ffmpeg_bin = args.ffmpeg_bin
     disabled_content = args.disabled_content or []
+    if 'all' in disabled_content:
+        disabled_content = content_types[:-1]
+
     if not await VscoVideo.is_ffmpeg_exists(ffmpeg_bin):
         logging.info(
             "ffmpeg cant's be called with '%s'. "
