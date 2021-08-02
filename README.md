@@ -10,7 +10,7 @@
 So there is no fcking CLI/GUI here as befits normal scripts.  
 It works through a call from the terminal 
 (*Sry, win-users, I know that really can be bad for yours...*)  
-Btw sup _2ch⚡_ & _VSCO находок группа_
+Btw sup _2ch⚡_ and _VSCO находок группа_
 
 [CHANGELOG.md](https://github.com/benhacka/vsco-downloader/blob/master/CHANGELOG.md)
 
