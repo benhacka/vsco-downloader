@@ -32,11 +32,17 @@ class VscoContent(ABC):
         return datetime.datetime.fromtimestamp(
             capture_date / 1000).strftime("%Y-%m-%d_%H-%M-%S_")
 
-    def get_file_name(self, *download_path):
+    def get_original_name(self):
         if not self.download_url:
             return None
-        name = self.download_url.split('/')[-1]
-        return os.path.join(*download_path, f'{self.datetime}{name}')
+        return self.download_url.split('/')[-1]
+
+    def get_file_name(self, *download_path, datetime_prefix=True):
+        if not self.download_url:
+            return None
+        datetime_prefix = self.datetime if datetime_prefix else ''
+        name = self.get_original_name()
+        return os.path.join(*download_path, f'{datetime_prefix}{name}')
 
     @classmethod
     def get_content_type(
@@ -85,12 +91,16 @@ class VscoVideo(VscoContent):
     def download_url(self):
         return self._content_dict['playback_url']
 
-    def get_file_name(self, *download_path, container='mp4'):
-        if not self.download_url:
-            return None
-        # TODO: make container as param
-        name = self._content_dict['_id'] + f'f.{container}'
-        return os.path.join(*download_path, f'{self.datetime}{name}')
+    def get_original_name(self):
+        return self._content_dict['_id']
+
+    def get_file_name(self,
+                      *download_path,
+                      container='mp4',
+                      datetime_prefix=True):
+        name = super().get_file_name(*download_path,
+                                     datetime_prefix=datetime_prefix)
+        return f'{name}.{container}' if name else name
 
     @classmethod
     def choice_best_resolution(cls, m3u8_text):
