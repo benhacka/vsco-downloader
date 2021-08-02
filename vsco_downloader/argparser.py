@@ -166,6 +166,15 @@ async def parse_arg():
                         'Filename has saving datetime so '
                         'this will not overwrite old links.')
 
+    parser.add_argument('-nr',
+                        '--no-restore-datetime',
+                        action='store_true',
+                        default=False,
+                        help='The script trying to restore file creation date '
+                        'before downloading to skip downloading '
+                        'step for the files saved w/o datetime. '
+                        'Pass the arg for skipping this step.')
+
     args = parser.parse_args()
     download_path = args.download_path
     if not download_path:
@@ -203,7 +212,8 @@ async def parse_arg():
         'ffmpeg_bin': ffmpeg_bin,
         'disabled_content': set(disabled_content),
         'video_container': args.container_for_m3u8,
-        'save_urls_to_file': args.save_parsed_download_urls
+        'save_urls_to_file': args.save_parsed_download_urls,
+        'restore_datetime': not args.no_restore_datetime
     }
     parse_dict = {
         'username_and_urls': users,

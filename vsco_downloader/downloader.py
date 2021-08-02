@@ -5,12 +5,13 @@ import re
 import json
 import tempfile
 from datetime import datetime
+from glob import glob
 from typing import List, Set
 
 import aiohttp
 import aiofiles
 
-from vsco_downloader.container import VscoVideo
+from vsco_downloader.container import VscoVideo, VscoPhoto, VscoMiniVideo
 from vsco_downloader.user import VscoUser
 
 DEFAULT_HEADERS = {
@@ -32,13 +33,15 @@ class VscoGrabber:
                  ffmpeg_bin: str = 'ffmpeg',
                  disabled_content: Set[str] = None,
                  video_container='mp4',
-                 save_urls_to_file=False):
+                 save_urls_to_file=False,
+                 restore_datetime=True):
         self._semaphore = asyncio.Semaphore(download_limit)
         self._max_ffmpeg_concat = asyncio.Semaphore(max_ffmpeg_threads)
         self._ffmpeg_bin = ffmpeg_bin
         self._disabled_content = disabled_content or {}
         self._video_container = video_container
         self._save_urls_to_file = save_urls_to_file
+        self._restore_datetime = restore_datetime
         self._content_dir = '.'
         self._logger = logging.getLogger('VSCO-GRABBER')
 
@@ -230,18 +233,31 @@ class VscoGrabber:
         if not total_count:
             self._logger.info('User %s has no content', user)
             return
+        user_dir = os.path.join(self._content_dir, str(user))
         if self._save_urls_to_file:
-            user_dir = os.path.join(self._content_dir, str(user))
             os.makedirs(user_dir, exist_ok=True)
             log_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_urls.txt")
             log_name = os.path.join(user_dir, log_name)
             async with aiofiles.open(log_name, 'w') as log_file:
                 await log_file.write('\n'.join(
                     [str(file.download_url) for file in all_content]))
+        photo_verbose, video_verbose = [
+            content.verbose_content_type
+            for content in (VscoPhoto, VscoMiniVideo)
+        ]
+        rename_dict = {photo_verbose: set(), video_verbose: set()}
+        if self._restore_datetime:
+            rename_dict = self._get_rename_dict(user_dir, photo_verbose,
+                                                video_verbose)
         self._logger.info('Start downloading files for %s', user)
         async with aiohttp.ClientSession(
                 headers=DEFAULT_HEADERS) as user.download_session:
             for index, file in enumerate(all_content.copy(), 1):
+                content_type = file.verbose_content_type
+                need_to_rename = (file.get_original_name()
+                                  in rename_dict.get(content_type, set()))
+                if need_to_rename:
+                    self._rename_file(file, user_dir)
                 if file.verbose_content_type in self._disabled_content:
                     user.stat.add_skipped(file)
                     continue
@@ -260,6 +276,53 @@ class VscoGrabber:
                 if not index % 10:
                     self._logger.info('%s: (%d / %d)', user, index,
                                       total_count)
+
+    @staticmethod
+    def _find_files_with_out_date(
+        path,
+        extension,
+    ):
+        match_pattern = r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_.*?'
+        files = {
+            os.path.basename(file)
+            for file in glob(f'{path}/*.{extension}')
+        }
+        if not files:
+            return set(), 0
+        content_set = set(
+            filter(lambda file: not re.match(match_pattern, file), files))
+        return content_set, len(content_set)
+
+    def _get_rename_dict(self, user_dir, photo_key, video_key):
+        rename_dict = {photo_key: set(), video_key: set()}
+        photo_count = video_count = 0
+        if VscoPhoto.verbose_content_type not in self._disabled_content:
+            rename_dict[
+                photo_key], photo_count = self._find_files_with_out_date(
+                    user_dir, 'jpg')
+        if VscoVideo.verbose_content_type not in self._disabled_content:
+            rename_dict[
+                video_key], video_count = self._find_files_with_out_date(
+                    user_dir, 'mp4')
+        common_warn = 'Detected %d %s with out datetime in the %s'
+        if photo_count:
+            self._logger.warning(common_warn, photo_count, 'photos', user_dir)
+        if photo_count:
+            self._logger.warning(common_warn, video_count, 'videos', user_dir)
+        return rename_dict
+
+    def _rename_file(self, file, user_dir):
+        origin_name = file.get_file_name(user_dir, datetime_prefix=False)
+        name_with_datetime = file.get_file_name(user_dir)
+        try:
+            os.rename(origin_name, name_with_datetime)
+            self._logger.error(f"Renamed file '%s' with out datetime to '%s'",
+                               origin_name, name_with_datetime)
+            return True
+        except OSError as e:
+            self._logger.error("Can't renamed a file '%s' to '%s': %s",
+                               origin_name, name_with_datetime, e)
+            return False
 
     async def _parser_first_page(self, user):
         try:
