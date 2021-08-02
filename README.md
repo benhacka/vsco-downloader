@@ -5,7 +5,7 @@
 [![Issues](https://img.shields.io/github/issues-raw/benhacka/vsco-downloader)]()
 [![MIT License](https://img.shields.io/github/license/benhacka/vsco-downloader)](https://github.com/benhacka/vsco-downloader/blob/master/LICENSE)
 
-
+## [![Rus README](https://www.countryflags.io/ru/shiny/24.png) Православная версия README](https://github.com/benhacka/vsco-downloader/blob/master/RU_README.md)
 ###### This is a simple console async downloader from [vsco.co](vsco.co).
 So there is no fcking CLI/GUI here as befits normal scripts.  
 It works through a call from the terminal 
@@ -15,7 +15,7 @@ Btw sup _2ch⚡_ & _VSCO находок группа_
 [CHANGELOG.md](https://github.com/benhacka/vsco-downloader/blob/master/CHANGELOG.md)
 
 ## Requirements
-All python requirements in the requirements.txt:
+All python requirements in the `requirements.txt`:
 - `aiohttp`
 - `aiofiles`  
 
@@ -28,7 +28,9 @@ To download videos in _m3u8_ format (parted videos with large size), you need co
 git clone https://github.com/benhacka/vsco-downloader
 cd vsco-downloader
 ```
-- For Windows users: change `python3` with `python` in all console command 
+- For Windows users: change `python3` with `python` in all console command   
+- You can call the script from any directory in terminal simply by typing the command `vsco-downloader` after installing the package on the system (installation via **var2** or **var3**)
+
 #### [var 1]. Usage w/o install dist pkg (_I do not recommend this method_)
 ```
 python3 -m pip install -r requirements.txt
@@ -53,6 +55,7 @@ _(depends on the distribution... i use arch btw [it's a stupid lie i use the bes
 python3 -m pip install git+https://github.com/benhacka/vsco-downloader.git
 ```
 
+
 ## Use cases
 All use cases wrote for installed package and calling with `vsco-downloader`  
 I highly recommend you to set `vsco_download_path` environment variable (see _Usage help_). 
@@ -67,10 +70,11 @@ I highly recommend you to set `vsco_download_path` environment variable (see _Us
 `vsco-downloader bar baz -r mini-video video`
 
 4. Only save download links w/o downloading content for *foo*, *bar*:  
-`vsco-downloader foo bar -r mini-video video photo -p`
+`vsco-downloader foo bar -r all -p`
 
 5. Download from file and args with skipping existing to ~/Download  
 ```sh
+# show file with accs
 $ cat accs_to_dl
 
 foo
@@ -79,6 +83,9 @@ foo
 https://vsco.co/baz/gallery
 ```
 `vsco-downloader bar -u accs_to_dl -s -d /home/username/Download/`
+6. Download without restoring the names of files that are in the folder without a date as a prefix in the name
+(if the file name matches the name of the direct link)
+`vsco-downloader foo bar baz -nr`  
 
 For more info see Usage help
 
@@ -94,7 +101,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -u USERS_FILE_LIST, --users-file-list USERS_FILE_LIST
-                        Same as the users but list of targets in file (one per line
+                        Same as the users but list of targets in file (one per line)
   --ffmpeg-bin FFMPEG_BIN
                         Name for ffmpeg binary that can be used for calling from terminal. Default "ffmpeg". If you have
                         installed ffmpeg from repo it should be in the /usr/bin/ffmpeg"
@@ -118,6 +125,12 @@ optional arguments:
                         A container for stream (m3u8) videos. Default "mp4", a possible alternative is "ts".
   -p, --save-parsed-download-urls
                         Store urls in the file into user dir. Filename has saving datetime so this will not overwrite old links.
+
+  -nr, --no-restore-datetime
+                        The script trying to restore file creation date before
+                        downloading to skip downloading step for the files saved w/o
+                        datetime. Pass the arg for skipping this step.
+
 
 Console VSCO downloader
 ```
