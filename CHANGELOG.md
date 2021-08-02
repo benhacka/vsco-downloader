@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Added new functionality for restoring the datetime of the content 
 from previously downloaded with not this script. 
 Can be disabled by passing `--no-restore-datetime`.
-- Added russian version of README.
+- Added Russian version of README.
  
 
 ## [0.1.1] - 2021-08-01
