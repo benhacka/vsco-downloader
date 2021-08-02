@@ -316,8 +316,8 @@ class VscoGrabber:
         name_with_datetime = file.get_file_name(user_dir)
         try:
             os.rename(origin_name, name_with_datetime)
-            self._logger.error(f"Renamed file '%s' with out datetime to '%s'",
-                               origin_name, name_with_datetime)
+            self._logger.info(f"Renamed file '%s' with out datetime to '%s'",
+                              origin_name, name_with_datetime)
             return True
         except OSError as e:
             self._logger.error("Can't renamed a file '%s' to '%s': %s",
