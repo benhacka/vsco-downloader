@@ -88,7 +88,7 @@ class VscoUserStat:
 
 class VscoUser:
     reg_exp_username = r'^[A-Za-z0-9_-]*$'
-    allowed_vsco_path = ('', 'media', 'gallery')
+    allowed_vsco_path = ('', 'media', 'gallery', 'video')
 
     def __init__(self,
                  username_or_short_url,
