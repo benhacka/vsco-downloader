@@ -129,7 +129,15 @@ class VscoVideo(VscoContent):
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await proc.communicate()
-        return stderr.decode() if stderr else None
+        if not stderr:
+            return None
+        try:
+            return stderr.decode(encoding='utf-8')
+        except UnicodeDecodeError:
+            try:
+                return stderr.decode(encoding='cp1252')
+            except Exception as e:
+                return f'error decode {e}'
 
     @classmethod
     async def is_ffmpeg_exists(cls, ffmpeg_bin):
