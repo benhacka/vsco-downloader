@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import sys
 import time
 from typing import List
 
@@ -33,9 +34,14 @@ async def a_main():
 
 
 def main():
+    is_new_ver_and_win = (sys.version_info[0] == 3 and sys.version_info[1] >= 8
+                          and sys.platform.startswith('win'))
+    if is_new_ver_and_win:
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     logging.basicConfig(level=logging.INFO)
     try:
         asyncio.run(a_main())
+        logging.info('Finishing...')
     except KeyboardInterrupt:
         logging.info('Finishing...')
 
