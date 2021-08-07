@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
   
-## [0.1.2] - 2021-08-02
+## [0.1.3] - 2021-08-07
+   
+### Fixed
+- Added an addition possible path for parsing username.
+- Fixed Window's console encoding error - added `cp1252` encoding.
+- Fixed Window's (with a kludge) issue with a closed loop at finishing of the script.  
+
+
+ ## [0.1.2] - 2021-08-02
    
 ### Added
 - Added new functionality for restoring the datetime of the content 
