@@ -3,7 +3,9 @@ import datetime
 import logging
 import sys
 import time
+from functools import wraps
 from typing import List
+from asyncio.proactor_events import _ProactorBasePipeTransport
 
 from vsco_downloader.argparser import parse_arg
 from vsco_downloader.user import VscoUser
@@ -33,16 +35,33 @@ async def a_main():
         logging.info('Script finished in %s', delta)
 
 
+def patch_false_positive_runtime_error():
+    """yeah this is fucking kludge only for wi[o]n-boyz"""
+    def silence_event_loop_close(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                return func(self, *args, **kwargs)
+            except RuntimeError as e:
+                if str(e) != 'Event loop is closed':
+                    raise
+
+        return wrapper
+
+    _ProactorBasePipeTransport.__del__ = silence_event_loop_close(
+        _ProactorBasePipeTransport.__del__)
+    # logging.warning(
+    #     'A _ProactorBasePipeTransport.__del__ patched w/ kludge...')
+
+
 def main():
+    logging.basicConfig(level=logging.INFO)
     is_new_ver_and_win = (sys.version_info[0] == 3 and sys.version_info[1] >= 8
                           and sys.platform.startswith('win'))
-    logging.basicConfig(level=logging.INFO)
+    if is_new_ver_and_win:
+        patch_false_positive_runtime_error()
     try:
         asyncio.run(a_main())
-        logging.info('Finishing...')
-        if is_new_ver_and_win:
-            logging.info('Finishing')
-            asyncio.get_event_loop().run_until_complete(asyncio.sleep(1))
     except KeyboardInterrupt:
         logging.info('Finishing...')
 
