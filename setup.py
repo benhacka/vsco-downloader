@@ -22,9 +22,7 @@ setuptools.setup(
     url=GIT_URL,
     download_url=f'{GIT_URL}/archive/refs/tags/v.{__version__}.tar.gz',
     include_package_data=True,
-    license='MIT',
     classifiers=[
-        'License :: OSI Approved :: MIT License',
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
