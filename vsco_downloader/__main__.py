@@ -12,6 +12,12 @@ from vsco_downloader.user import VscoUser
 from vsco_downloader.downloader import VscoGrabber
 
 
+def py_version_checker():
+    min_major, min_minor = (3, 7)
+    if sys.version_info < (min_major, min_minor):
+        sys.exit(f'Python < {min_major}.{min_minor} is not supported')
+
+
 async def a_main():
     try:
         init_dict, parse_dict = await parse_arg()
@@ -55,6 +61,7 @@ def patch_false_positive_runtime_error():
 
 
 def main():
+    py_version_checker()
     logging.basicConfig(level=logging.INFO)
     is_new_ver_and_win = (sys.version_info[0] == 3 and sys.version_info[1] >= 8
                           and sys.platform.startswith('win'))
