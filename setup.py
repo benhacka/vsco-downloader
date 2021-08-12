@@ -8,7 +8,7 @@ py_version_checker()
 with open('requirements.txt') as f:
     required = [requirement.strip() for requirement in f.readlines()]
 
-GIT_URL = '"https://github.com/benhacka/vsco-downloader'
+GIT_URL = 'https://github.com/benhacka/vsco-downloader'
 
 setuptools.setup(
     name='vsco-downloader',
