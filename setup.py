@@ -14,7 +14,6 @@ setuptools.setup(
     name='vsco-downloader',
     version=__version__,
     description='VSCO download manager on pure REST',
-    long_description='README.md',
     long_description_content_type='text/markdown',
     zip_safe=False,
     author='anon',
