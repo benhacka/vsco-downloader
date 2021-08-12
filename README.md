@@ -6,7 +6,7 @@
 [![MIT License](https://img.shields.io/github/license/benhacka/vsco-downloader)](https://github.com/benhacka/vsco-downloader/blob/master/LICENSE)
 
 ## [![Rus README](https://www.countryflags.io/ru/shiny/24.png) Православная версия README](https://github.com/benhacka/vsco-downloader/blob/master/RU_README.md)
-###### This is a simple console async downloader from [vsco.co](vsco.co).
+###### This is a simple console async downloader from [vsco.co](vsco.co) used original web REST requests.
 So there is no fcking CLI/GUI here as befits normal scripts.  
 It works through a call from the terminal 
 (*Sry, win-users, I know that really can be bad for yours...*)  
@@ -23,6 +23,16 @@ To download videos in _m3u8_ format (parted videos with large size), you need co
 
 
 ## Installation
+### Easy and recommended installation with `PIP`
+- Install:  
+```
+pip install vsco-downloader
+```
+- Upgrade:  
+```
+pip install vsco-downloader --upgrade
+```
+### Install from source
 #### Common step
 ```
 git clone https://github.com/benhacka/vsco-downloader
@@ -30,6 +40,8 @@ cd vsco-downloader
 ```
 - For Windows users: change `python3` with `python` in all console command   
 - You can call the script from any directory in terminal simply by typing the command `vsco-downloader` after installing the package on the system (installation via **var2** or **var3**)
+
+
 
 #### [var 1]. Usage w/o install dist pkg (_I do not recommend this method_)
 ```
@@ -130,7 +142,7 @@ optional arguments:
                         The script trying to restore file creation date before
                         downloading to skip downloading step for the files saved w/o
                         datetime. Pass the arg for skipping this step.
-
+  -v, --version         Show the current script version
 
 Console VSCO downloader
 ```
