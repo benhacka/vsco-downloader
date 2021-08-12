@@ -1,8 +1,8 @@
 # VSCO Downloader 
-[![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)]()
-[![Release](https://img.shields.io/github/v/release/benhacka/vsco-downloader)]()
-[![GitHub last commit](https://img.shields.io/github/last-commit/benhacka/vsco-downloader)]()
-[![Issues](https://img.shields.io/github/issues-raw/benhacka/vsco-downloader)]()
+[![Python version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)](#)
+[![Release](https://img.shields.io/github/v/release/benhacka/vsco-downloader)](#)
+[![GitHub last commit](https://img.shields.io/github/last-commit/benhacka/vsco-downloader)](#)
+[![Issues](https://img.shields.io/github/issues-raw/benhacka/vsco-downloader)](#)
 [![MIT License](https://img.shields.io/github/license/benhacka/vsco-downloader)](https://github.com/benhacka/vsco-downloader/blob/master/LICENSE)
 
 ## [![Rus README](https://www.countryflags.io/ru/shiny/24.png) Православная версия README](https://github.com/benhacka/vsco-downloader/blob/master/RU_README.md)
