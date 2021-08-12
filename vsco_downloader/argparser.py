@@ -1,8 +1,10 @@
 import argparse
 import logging
 import os
+import sys
 
 from vsco_downloader.container import REGISTERED_CONTENT, VscoVideo
+from vsco_downloader import __version__
 
 content_types = [
     content.verbose_content_type for content in REGISTERED_CONTENT
@@ -22,7 +24,7 @@ class CheckRange(argparse.Action):
         if values not in check_range:
             raise argparse.ArgumentError(
                 self, f'The value should be in '
-                f'{check_range.start, check_range.stop-1}]')
+                f'{check_range.start, check_range.stop - 1}]')
         setattr(args, self.dest, values)
 
 
@@ -174,8 +176,16 @@ async def parse_arg():
                         'before downloading to skip downloading '
                         'step for the files saved w/o datetime. '
                         'Pass the arg for skipping this step.')
-
+    parser.add_argument('-v',
+                        '--version',
+                        action='store_true',
+                        default=False,
+                        help='Show the current script version')
     args = parser.parse_args()
+    if args.version:
+        print(f'The script version is {__version__}.')
+        sys.exit(0)
+
     download_path = args.download_path
     if not download_path:
         download_path = os.environ.get(args.download_path_variable)
