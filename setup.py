@@ -5,9 +5,6 @@ from vsco_downloader.__main__ import py_version_checker
 
 py_version_checker()
 
-with open('requirements.txt') as f:
-    required = [requirement.strip() for requirement in f.readlines()]
-
 GIT_URL = 'https://github.com/benhacka/vsco-downloader'
 
 setuptools.setup(
@@ -19,7 +16,6 @@ setuptools.setup(
     author='anon',
     author_email='anon@fake-mail.foobar',
     url=GIT_URL,
-    download_url=f'{GIT_URL}/archive/refs/tags/v.{__version__}.tar.gz',
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -28,7 +24,6 @@ setuptools.setup(
         "Programming Language :: Python :: 3.9",
     ],
     packages=setuptools.find_packages(),
-    install_requires=required,
     keywords="vsco download scrape parse photo social-network".split(),
     python_requires='>=3.7',
     entry_points={
